@@ -9,12 +9,24 @@ use std::io::io_error;
 pub fn read_hex_char() -> Option<u8>
 {
   let mut read_stream = stdin();
-  let mut read_buf: ~[u8] = ~[0, 0];
+  let mut read_buf: ~[u8] = ~[0];
 
-  match read_stream.read (read_buf) {
-    Some(_) => { from_str_bytes_common (read_buf, 16, false, false, false, ExpNone, false, false) }
-    None => None
+  if read_stream.read (read_buf).is_none() {
+    return None;
   }
+  let digit_1 = from_str_bytes_common (read_buf, 16, false, false, false, ExpNone, false, false);
+  if digit_1.is_none() {
+    return None;
+  }
+  if read_stream.read (read_buf).is_none() {
+    return None;
+  }
+  let digit_2 = from_str_bytes_common (read_buf, 16, false, false, false, ExpNone, false, false);
+  if digit_2.is_none() {
+    return None;
+  }
+
+  Some(16 * digit_1.unwrap() + digit_2.unwrap())
 }
 
 /**
