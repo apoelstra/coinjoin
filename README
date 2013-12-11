@@ -1,0 +1,44 @@
+CoinJoiner v0.1
+Andrew Poelstra (andytoshi)
+December 2013
+1DPtVM63advB61vKS3tHPhVcZdFTuc8Ka8
+
+
+
+BUILDING
+============
+
+Install rustc and the openssl libs (no EC, Fedora is fine).
+Then just type
+  make
+
+
+USAGE
+===============
+
+STEP ONE
+========
+All parties who want to coinjoin create a raw transaction using createrawtransaction.
+They submit these to one individual, who enters them into CoinJoiner by running
+
+  ./coinjoin-merge-unsigned
+
+Then just copy/paste the transactions in, one on each line, followed by a blank line.
+The output will be an unsigned merged transaction.
+
+
+STEP TWO
+========
+This merged transaction is distributed to the original parties, who each sign it.
+Then they send these back to the individual running CoinJoiner, who merges them
+by running
+
+  ./coinjoin-merge-signed
+
+Then just copy/paste the signed transactions in, one on each line, followed by a
+blank line. The output will be a merged, signed transaction that can be submitted
+to the bitcoin network.
+
+
+
+

@@ -1,0 +1,5 @@
+test-*
+*.o
+coinjoin-merge-signed
+coinjoin-merge-unsigned
+
