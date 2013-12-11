@@ -3,7 +3,7 @@ use hash::Hashable;
 
 /* Modules */
 mod hash;
-mod merge;
+mod merge_unsigned;
 mod transaction;
 mod util;
 
@@ -23,7 +23,7 @@ fn main()
     next_ln = util::read_hex();
   }
 
-  match merge::merge_unsigned_transactions (transactions) {
+  match merge_unsigned::merge_unsigned_transactions (transactions) {
     None => { println ("Failed to merge transactions."); }
     Some(t) => { println (format! ("{:s}", t.to_str())); }
   }

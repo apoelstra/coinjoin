@@ -1,5 +1,6 @@
 test-*
 *.o
+*.a
 coinjoin-merge-signed
 coinjoin-merge-unsigned
 

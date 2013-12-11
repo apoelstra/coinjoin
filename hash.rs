@@ -4,7 +4,8 @@ use std::vec::from_buf;
 use std::vec::raw::to_ptr;
 
 
-#[link_args = "sha-wrapper.o -lcrypto"]
+#[link(name = "sha-wrapper")]
+#[link(name = "crypto")]
 extern {
   fn csha256_sum (input: *u8, len: size_t) -> *u8;
   fn csha256_destroy (input: *u8);
