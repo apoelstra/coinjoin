@@ -1,10 +1,6 @@
 
-
 #include <stdlib.h>
 #include <openssl/sha.h>
-
-
-#include <stdio.h>
 
 unsigned char *csha256_sum (unsigned char *input, size_t len)
 {
