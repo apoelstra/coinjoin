@@ -1,6 +1,7 @@
 CoinJoiner v0.1
 Andrew Poelstra (andytoshi)
-December 2013
+http://www.wpsoftware.net/andrew
+apoelstra at wpsoftware.net
 1DPtVM63advB61vKS3tHPhVcZdFTuc8Ka8
 
 
@@ -18,28 +19,30 @@ USAGE
 
 STEP ONE
 ========
-All parties who want to coinjoin create a raw transaction using createrawtransaction.
-They submit these to one individual, who enters them into CoinJoiner by running
+All parties who want to coinjoin create a raw transaction using
+createrawtransaction. They submit these to one individual, who enters
+them into CoinJoiner by running
 
   ./coinjoin-merge-unsigned
 
-Then just copy/paste the transactions in, one on each line, followed by a blank line.
-The output will be an unsigned merged transaction. If there were any signatures in
-the original transactions, these are stripped since they would now be invalid.
+Then just copy/paste the transactions in, one on each line, followed
+by a blank line. The output will be an unsigned merged transaction. If
+there were any signatures in the original transactions, these are
+stripped since they would now be invalid.
 
 
 STEP TWO
 ========
-This merged transaction is distributed to the original parties, who each sign it.
-Then they send these back to the individual running CoinJoiner, who merges them
-by running
+This merged transaction is distributed to the original parties, who
+each sign it. Then they send these back to the individual running
+CoinJoiner, who merges them by running
 
   ./coinjoin-merge-signed
 
-Then just copy/paste the signed transactions in, one on each line, followed by a
-blank line. The output will be a merged, signed transaction that can be submitted
-to the bitcoin network. Further, the order of the inputs and outputs in this
-transaction is randomized.
+Then just copy/paste the signed transactions in, one on each line,
+followed by a blank line. The output will be a merged, signed
+transaction that can be submitted to the bitcoin network. Further, the
+order of the inputs and outputs in this transaction is randomized.
 
 
 
