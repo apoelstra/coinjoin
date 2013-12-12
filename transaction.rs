@@ -38,6 +38,7 @@ enum ParserState {
   ReadTxoutScriptLen,
   ReadTxoutScript,
   ReadLockTime,
+  Error,
   Done
 }
 
@@ -93,7 +94,7 @@ impl Clone for Transaction {
 /**
  * Constructor / createrawtransaction parser
  */
-pub fn from_hex (hex_string: &[u8]) -> Transaction
+pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
 {
   let mut rv: Transaction = Transaction { nVersion: 0, nLockTime: 0, input: ~[], output: ~[] };
 
@@ -127,7 +128,7 @@ pub fn from_hex (hex_string: &[u8]) -> Transaction
             n => { vin_counter = n as int; 0 }
           };
           if width > 0 { ReadInputCount }
-          else if vin_counter == 0 { Done }  /* TODO: this 'Done' should be an error (no inputs) */
+          else if vin_counter == 0 { Error }
           else { ReadTxinHash }
         } else if count < width {
           vin_counter += (*ch as int) << ((count - 1) * 8);
@@ -195,7 +196,7 @@ pub fn from_hex (hex_string: &[u8]) -> Transaction
             n => { vout_counter = n as int; 0 }
           };
           if width > 0 { ReadOutputCount }
-          else if vout_counter == 0 { Done }  /* TODO: this 'Done' should be an error (no outputs) */
+          else if vout_counter == 0 { Error }
           else { ReadTxoutValue }
         } else if count < width {
           vout_counter += (*ch as int) << ((count - 1) * 8);
@@ -248,6 +249,8 @@ pub fn from_hex (hex_string: &[u8]) -> Transaction
         rv.nLockTime += (*ch as u32) << ((count - 1) * 8);
         if count < width { ReadLockTime } else { Done }
       }
+      /* Error */
+      Error => { break }
       /* End */
       Done => { break }
     };
@@ -255,7 +258,11 @@ pub fn from_hex (hex_string: &[u8]) -> Transaction
     if (next_state as int) != (state as int) { count = 0; }
     state = next_state;
   }
-  rv
+  if (state as int) == (Done as int) {
+    Some (rv)
+  } else {
+    None
+  }
 }
 
 /**

@@ -19,7 +19,10 @@ fn main()
 
   let mut next_ln = util::read_hex();
   while next_ln.len() > 0 {
-    transactions.push (transaction::from_hex (next_ln));
+    match transaction::from_hex (next_ln) {
+      Some(t) => { transactions.push (t); }
+      None => {}
+    }
     next_ln = util::read_hex();
   }
 
