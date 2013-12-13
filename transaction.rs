@@ -116,8 +116,7 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
       ReadVersion => {
         match decoder::decode_token (&mut iter, decoder::Unsigned32) {
           decoder::Integer(n) => { rv.nVersion = n as u32; ReadInputCount }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* READ INPUTS */
@@ -125,29 +124,26 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
         match decoder::decode_token (&mut iter, decoder::VarInt) {
           decoder::Integer(0) => { Error }  /* zero inputs is a failure */
           decoder::Integer(n) => { vin_counter = n; ReadTxinHash }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* Read the hash of a txin */
       ReadTxinHash => {
         match decoder::decode_token (&mut iter, decoder::Bytestring(32)) {
-          decoder::Integer(_) => Error,
           decoder::String(s) => {
             let mut new_txin = new_blank_txin();
             new_txin.prev_hash = s;
             rv.input.push (new_txin);
             ReadTxinIndex
           }
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* Read the index of a txin */
       ReadTxinIndex => {
         match decoder::decode_token (&mut iter, decoder::Unsigned32) {
           decoder::Integer(n) => { rv.input[rv.input.len() - 1].prev_index = n as u32; ReadTxinScriptSigLen }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* Read the scriptSig of a txin */
@@ -155,18 +151,16 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
         match decoder::decode_token (&mut iter, decoder::VarInt) {
           decoder::Integer(0) => { ReadTxinSequence }  /* skip scriptSig if it has width 0 */
           decoder::Integer(n) => { width = n; ReadTxinScriptSig }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       ReadTxinScriptSig => {
         match decoder::decode_token (&mut iter, decoder::Bytestring(width)) {
-          decoder::Integer(_) => Error,
           decoder::String(s) => {
             rv.input[rv.input.len() - 1].scriptSig = s;
             ReadTxinSequence
           }
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* Read the sequence no. of a txin */
@@ -181,8 +175,7 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
               ReadOutputCount
             }
           }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* READ OUTPUTS */
@@ -190,8 +183,7 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
         match decoder::decode_token (&mut iter, decoder::VarInt) {
           decoder::Integer(0) => { Error }  /* zero outputs is a failure (maybe it shouldn't be?) */
           decoder::Integer(n) => { vout_counter = n; ReadTxoutValue }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* Read txout value */
@@ -203,8 +195,7 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
             rv.output.push (new_output);
             ReadTxoutScriptLen
           }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* Read txout script */
@@ -220,13 +211,11 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
             }
           }
           decoder::Integer(n) => { width = n; ReadTxoutScript }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       ReadTxoutScript => {
         match decoder::decode_token (&mut iter, decoder::Bytestring(width)) {
-          decoder::Integer(_) => Error,
           decoder::String(s) => {
             rv.output[rv.output.len() - 1].scriptPubKey = s;
             vout_counter -= 1;
@@ -236,15 +225,14 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
               ReadLockTime
             }
           }
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* DONE OUTPUTS, Read nLockTime */
       ReadLockTime => {
         match decoder::decode_token (&mut iter, decoder::Unsigned32) {
           decoder::Integer(n) => { rv.nLockTime = n as u32; Done }
-          decoder::String(_) => Error,
-          decoder::Invalid => Error
+          _ => Error
         }
       }
       /* Finished */
