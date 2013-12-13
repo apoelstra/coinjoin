@@ -54,9 +54,18 @@ pub fn merge_unsigned_transactions (txlist: &[Transaction]) -> Option<Transactio
       return None;
     }
 
-    /* Pile all the outputs on */
+    /* Pile all the outputs on -- check for duplicate outputs and sum them */
     for tx in tx.output.iter() {
-      master.output.push (tx.clone());
+      let mut already_present = false;
+      for tx_dup in master.output.mut_iter() {
+        if tx_dup.scriptPubKey == tx.scriptPubKey {
+          tx_dup.nValue += tx.nValue;
+          already_present = true;
+        }
+      }
+      if !already_present {
+        master.output.push (tx.clone());
+      }
     }
 
     /* Check for duplicate inputs and bail otherwise. This is pretty-much
