@@ -1,4 +1,6 @@
 
+use std::vec::VecIterator;
+
 pub enum TokenType {
   Unsigned32,
   Unsigned64,
@@ -12,14 +14,14 @@ pub enum Token {
   Invalid
 }
 
-fn decode_integer (iter: &mut Iterator<&u8>, width: int) -> Token {
+fn decode_integer (iter: &mut VecIterator<u8>, width: int) -> Token {
   let mut success = true;
   let mut rv: u64 = 0;
 
   for i in range (0, width) {
     match iter.next() {
       None => { success = false; break }
-      Some(ch) => { rv += (*ch as u64) << 8 * (width - i); }
+      Some(ch) => { rv += (*ch as u64) << 8 * i; }
     }
   }
   if success { Integer (rv) }
@@ -27,7 +29,7 @@ fn decode_integer (iter: &mut Iterator<&u8>, width: int) -> Token {
 }
 
 
-pub fn decode_token (iter: &mut Iterator<&u8>, expected_token: TokenType) -> Token {
+pub fn decode_token (iter: &mut VecIterator<u8>, expected_token: TokenType) -> Token {
   match expected_token {
     /* Fixed-width integers */
     Unsigned32 => { decode_integer (iter, 4) }
