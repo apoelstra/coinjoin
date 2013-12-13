@@ -1,5 +1,7 @@
 
 use std::to_str::ToStr;
+
+use decoder;
 use util;
 use hash;
 
@@ -98,166 +100,159 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
 {
   let mut rv: Transaction = Transaction { nVersion: 0, nLockTime: 0, input: ~[], output: ~[] };
 
-  /* Initial state: read version, 4 bytes */
-  let mut state = ReadVersion;
-  let mut width = 4;
-  let mut count = 0;
+  /* Auxiallary state */
+  let mut width = 0;
+  let mut vin_counter: u64 = 0;
+  let mut vout_counter: u64 = 0;
 
-  let mut vin_counter = 0;
-  let mut vout_counter = 0;
-  let mut aux_width = 0;
-
-  for ch in hex_string.iter() {
-    count += 1;
-    /* Run state machine */
-    let next_state = match state {
+  /* RUN STATE MACHINE */
+  let iter = &mut hex_string.iter() as &mut Iterator<&u8>;
+  let mut state = ReadVersion;  /* Initial state: read version */
+  /* Is there a nicer way to compare C-like enums? */
+  while (state as int) != (Done as int) &&
+        (state as int) != (Error as int) {
+    state = match state {
       /* Read big-endian u32 version */
       ReadVersion => {
-        width = 4;
-        rv.nVersion += (*ch as u32) << ((count - 1) * 8);
-        if count < width { ReadVersion } else { ReadInputCount }
-      },
+        match decoder::decode_token (iter, decoder::Unsigned32) {
+          decoder::Integer(n) => { rv.nVersion = n as u32; ReadInputCount }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
+        }
+      }
       /* READ INPUTS */
       ReadInputCount => {
-        /* TODO: whenever rust gets stable macro support, this "read VI" code should be factored out */
-        if count == 1 {
-          width = match *ch {
-            0xff => 8,
-            0xfe => 4,
-            0xfd => 2,
-            n => { vin_counter = n as int; 0 }
-          };
-          if width > 0 { ReadInputCount }
-          else if vin_counter == 0 { Error }
-          else { ReadTxinHash }
-        } else if count < width {
-          vin_counter += (*ch as int) << ((count - 1) * 8);
-          ReadInputCount
-        } else {
-          ReadTxinHash
+        match decoder::decode_token (iter, decoder::VarInt) {
+          decoder::Integer(0) => { Error }  /* zero inputs is a failure */
+          decoder::Integer(n) => { vin_counter = n; ReadTxinHash }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
         }
-      },
+      }
       /* Read the hash of a txin */
       ReadTxinHash => {
-        if count == 1 {
-          vin_counter -= 1;
-          width = 32;
-          rv.input.push(new_blank_txin());
+        match decoder::decode_token (iter, decoder::Bytestring(32)) {
+          decoder::Integer(_) => Error,
+          decoder::String(s) => {
+            let mut new_txin = new_blank_txin();
+            new_txin.prev_hash = s;
+            rv.input.push (new_txin);
+            ReadTxinIndex
+          }
+          decoder::Invalid => Error
         }
-
-        rv.input[rv.input.len() - 1].prev_hash.push (*ch);
-        if count < width { ReadTxinHash } else { ReadTxinIndex }
-      },
+      }
       /* Read the index of a txin */
       ReadTxinIndex => {
-        width = 4;
-        rv.input[rv.input.len() - 1].prev_index += (*ch as u32) << ((count - 1) * 8);
-        if count < width { ReadTxinIndex } else { ReadTxinScriptSigLen }
-      },
+        match decoder::decode_token (iter, decoder::Unsigned32) {
+          decoder::Integer(n) => { rv.input[rv.input.len() - 1].prev_index = n as u32; ReadTxinScriptSigLen }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
+        }
+      }
       /* Read the scriptSig of a txin */
       ReadTxinScriptSigLen => {
-        if count == 1 {
-          width = match *ch {
-            0xff => 8,
-            0xfe => 4,
-            0xfd => 2,
-            n => { aux_width = n as int; 0 }
-          };
-          if width > 0 { ReadTxinScriptSigLen }
-          else if aux_width == 0 { ReadTxinSequence } /* skip sig if it has width 0 */
-          else { ReadTxinScriptSig }
-        } else if count < width {
-          aux_width += (*ch as int) << ((count - 1) * 8);
-          ReadTxinScriptSigLen
-        } else {
-          ReadTxinScriptSig
+        match decoder::decode_token (iter, decoder::VarInt) {
+          decoder::Integer(0) => { ReadTxinSequence }  /* skip scriptSig if it has width 0 */
+          decoder::Integer(n) => { width = n; ReadTxinScriptSig }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
         }
       }
       ReadTxinScriptSig => {
-        width = aux_width;
-        rv.input[rv.input.len() - 1].scriptSig.push (*ch);
-        if count < width { ReadTxinScriptSig } else { ReadTxinSequence }
+        match decoder::decode_token (iter, decoder::Bytestring(width)) {
+          decoder::Integer(_) => Error,
+          decoder::String(s) => {
+            rv.input[rv.input.len() - 1].scriptSig = s;
+            ReadTxinSequence
+          }
+          decoder::Invalid => Error
+        }
       }
       /* Read the sequence no. of a txin */
       ReadTxinSequence => {
-        width = 4;
-        rv.input[rv.input.len() - 1].nSequence += (*ch as u32) << ((count - 1) * 8);
-        if count < width { ReadTxinSequence }
-        else if vin_counter > 0 { ReadTxinHash }
-        else { ReadOutputCount }
+        match decoder::decode_token (iter, decoder::Unsigned32) {
+          decoder::Integer(n) => {
+            rv.input[rv.input.len() - 1].nSequence = n as u32;
+            if vin_counter > 0 {
+              vin_counter -= 1;
+              ReadTxinHash
+            } else {
+              ReadOutputCount
+            }
+          }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
+        }
       }
       /* READ OUTPUTS */
       ReadOutputCount => {
-        if count == 1 {
-          width = match *ch {
-            0xff => 8,
-            0xfe => 4,
-            0xfd => 2,
-            n => { vout_counter = n as int; 0 }
-          };
-          if width > 0 { ReadOutputCount }
-          else if vout_counter == 0 { Error }
-          else { ReadTxoutValue }
-        } else if count < width {
-          vout_counter += (*ch as int) << ((count - 1) * 8);
-          ReadOutputCount
-        } else {
-          ReadTxoutValue
+        match decoder::decode_token (iter, decoder::VarInt) {
+          decoder::Integer(0) => { Error }  /* zero outputs is a failure (maybe it shouldn't be?) */
+          decoder::Integer(n) => { vout_counter = n; ReadTxoutValue }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
         }
-      },
+      }
       /* Read txout value */
       ReadTxoutValue => {
-        if count == 1 {
-          vout_counter -= 1;
-          width = 8;
-          rv.output.push(new_blank_txout());
+        match decoder::decode_token (iter, decoder::Unsigned32) {
+          decoder::Integer(n) => {
+            let mut new_output = new_blank_txout();
+            new_output.nValue = n;
+            rv.output.push (new_output);
+            ReadTxoutScriptLen
+          }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
         }
-
-        rv.output[rv.output.len() - 1].nValue += (*ch as u64) << ((count - 1) * 8);
-        if count < width { ReadTxoutValue } else { ReadTxoutScriptLen }
       }
       /* Read txout script */
       ReadTxoutScriptLen => {
-        if count == 1 {
-          width = match *ch {
-            0xff => 8,
-            0xfe => 4,
-            0xfd => 2,
-            n => { aux_width = n as int; 0 }
-          };
-          if width > 0 { ReadTxoutScriptLen }
-            /* skip script if it has width 0 */
-          else if aux_width == 0 { if vout_counter > 0 { ReadTxoutValue } else { ReadLockTime } }
-          else { ReadTxoutScript }
-        } else if count < width {
-          aux_width += (*ch as int) << ((count - 1) * 8);
-          ReadTxoutScriptLen
-        } else {
-          ReadTxoutScript
+        match decoder::decode_token (iter, decoder::VarInt) {
+          /* skip scriptPubKey if it has width 0 */
+          decoder::Integer(0) => {
+            if vout_counter > 0 {
+              vout_counter -= 1;
+              ReadTxoutValue
+            } else {
+              ReadLockTime
+            }
+          }
+          decoder::Integer(n) => { width = n; ReadTxoutScript }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
         }
-      } 
+      }
       ReadTxoutScript => {
-        width = aux_width;
-        rv.output[rv.output.len() - 1].scriptPubKey.push (*ch);
-        if count < width { ReadTxoutScript }
-        else if vout_counter > 0 { ReadTxoutValue }
-        else { ReadLockTime }
+        match decoder::decode_token (iter, decoder::Bytestring(width)) {
+          decoder::Integer(_) => Error,
+          decoder::String(s) => {
+            rv.output[rv.output.len() - 1].scriptPubKey = s;
+            if vout_counter > 0 {
+              vout_counter -= 1;
+              ReadTxoutValue
+            } else {
+              ReadLockTime
+            }
+          }
+          decoder::Invalid => Error
+        }
       }
       /* DONE OUTPUTS, Read nLockTime */
       ReadLockTime => {
-        width = 4;
-        rv.nLockTime += (*ch as u32) << ((count - 1) * 8);
-        if count < width { ReadLockTime } else { Done }
+        match decoder::decode_token (iter, decoder::Unsigned32) {
+          decoder::Integer(n) => { rv.nLockTime = n as u32; ReadInputCount }
+          decoder::String(_) => Error,
+          decoder::Invalid => Error
+        }
       }
-      /* Error */
+      /* Finished */
       Error => { break }
-      /* End */
       Done => { break }
-    };
-    /* Increment counter, do state transition */
-    if (next_state as int) != (state as int) { count = 0; }
-    state = next_state;
+    }
   }
+
   if (state as int) == (Done as int) {
     Some (rv)
   } else {

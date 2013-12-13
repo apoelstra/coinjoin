@@ -2,6 +2,7 @@
 use hash::Hashable;
 
 /* Modules */
+mod decoder;
 mod hash;
 mod merge_signed;
 mod transaction;
