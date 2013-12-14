@@ -13,7 +13,7 @@ mod util;
  */
 fn main()
 {
-  println ("Welcome to coinjoin-merger. Enter each unsigned raw transaction");
+  println ("Welcome to coinjoin-merge-unsigned. Enter each unsigned raw transaction");
   println ("on a separate line, followed by a blank line or EOF to finish.");
 
   let mut transactions: ~[transaction::Transaction] = ~[];
