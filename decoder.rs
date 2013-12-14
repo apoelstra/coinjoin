@@ -21,7 +21,7 @@ fn decode_integer (iter: &mut VecIterator<u8>, width: int) -> Token {
   for i in range (0, width) {
     match iter.next() {
       None => { success = false; break }
-      Some(ch) => { rv += (*ch as u64) << 8 * i; }
+      Some(&ch) => { rv += (ch as u64) << 8 * i; }
     }
   }
   if success { Integer (rv) }
@@ -37,8 +37,8 @@ pub fn decode_token (iter: &mut VecIterator<u8>, expected_token: TokenType) -> T
     /* Variable-width integers */
     VarInt => {
       match iter.next() {
-        Some(ch) => {
-          match *ch {
+        Some(&ch) => {
+          match ch {
             0xff => decode_integer (iter, 8),
             0xfe => decode_integer (iter, 4),
             0xfd => decode_integer (iter, 2),
@@ -55,7 +55,7 @@ pub fn decode_token (iter: &mut VecIterator<u8>, expected_token: TokenType) -> T
       for _ in range (0, len) {
         match iter.next() {
           None => { success = false; break }
-          Some(ch) => { rv.push (*ch); }
+          Some(&ch) => { rv.push (ch); }
         }
       }
       if success { String (rv) }
