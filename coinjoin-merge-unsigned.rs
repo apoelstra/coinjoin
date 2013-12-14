@@ -28,7 +28,7 @@ fn main()
   }
 
   match merge_unsigned::merge_unsigned_transactions (transactions) {
-    None => { println ("fatal: Failed to merge transactions."); }
+    None => { println ("err: Failed to merge transactions."); }
     Some(t) => {
       println (format! ("mpo: {:f}", (t.most_popular_output() as f64) / 100000000f64 ));
       println (format! ("hex: {:s}", t.to_str()));

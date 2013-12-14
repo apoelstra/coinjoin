@@ -41,14 +41,14 @@ pub fn merge_signed_transactions (txlist: &[Transaction]) -> Option<Transaction>
   for tx in txlist.iter() {
     /* Check that version and locktime at least match */
     if tx.nVersion != master.nVersion {
-      println (format! ("Tx {:s} did not match {:s} (version {:u} vs {:u})!",
+      println (format! ("err: Tx {:s} did not match {:s} (version {:u} vs {:u})!",
         util::u8_to_hex_string (master.to_hash()),
         util::u8_to_hex_string (tx.to_hash()),
         master.nVersion, tx.nVersion));
       return None;
     }
     if tx.nLockTime != master.nLockTime {
-      println (format! ("Tx {:s} did not match {:s} (locktime {:u} vs {:u})!",
+      println (format! ("err: Tx {:s} did not match {:s} (locktime {:u} vs {:u})!",
         util::u8_to_hex_string (master.to_hash()),
         util::u8_to_hex_string (tx.to_hash()),
         master.nLockTime, tx.nLockTime));
@@ -58,7 +58,7 @@ pub fn merge_signed_transactions (txlist: &[Transaction]) -> Option<Transaction>
     /* Check that outputs match */
     for (tx1, tx2) in tx.output.iter().zip(master.output.iter()) {
       if !match_output (tx1, tx2) {
-        println (format! ("Tx {:s} did not match {:s} (output {:s}:{:u} vs {:s}:{:u})!",
+        println (format! ("err: Tx {:s} did not match {:s} (output {:s}:{:u} vs {:s}:{:u})!",
           master_hash,
           util::u8_to_hex_string (tx.to_hash()),
           util::u8_to_hex_string (tx1.scriptPubKey), tx1.nValue,
@@ -74,7 +74,7 @@ pub fn merge_signed_transactions (txlist: &[Transaction]) -> Option<Transaction>
           tx2.scriptSig = tx1.scriptSig.clone();
         }
       } else {
-        println (format! ("Tx {:s} did not match {:s} (input {:s}:{:u} vs {:s}:{:u})!",
+        println (format! ("err: Tx {:s} did not match {:s} (input {:s}:{:u} vs {:s}:{:u})!",
           master_hash,
           util::u8_to_hex_string (tx.to_hash()),
           util::u8_to_hex_string (tx1.prev_hash), tx1.prev_index,

@@ -40,14 +40,14 @@ pub fn merge_unsigned_transactions (txlist: &[Transaction]) -> Option<Transactio
      * what to do. (I guess it doesn't matter, in principle some humans will
      * verify this before it gets signed..) */
     if tx.nVersion != master.nVersion {
-      println (format! ("Tx {:s} did not match {:s} (version {:u} vs {:u})!",
+      println (format! ("err: Tx {:s} did not match {:s} (version {:u} vs {:u})!",
         util::u8_to_hex_string (master.to_hash()),
         util::u8_to_hex_string (tx.to_hash()),
         master.nVersion, tx.nVersion));
       return None;
     }
     if tx.nLockTime != master.nLockTime {
-      println (format! ("Tx {:s} did not match {:s} (locktime {:u} vs {:u})!",
+      println (format! ("err: Tx {:s} did not match {:s} (locktime {:u} vs {:u})!",
         util::u8_to_hex_string (master.to_hash()),
         util::u8_to_hex_string (tx.to_hash()),
         master.nLockTime, tx.nLockTime));
@@ -75,7 +75,7 @@ pub fn merge_unsigned_transactions (txlist: &[Transaction]) -> Option<Transactio
     for tx in tx.input.iter() {
       for tx_dup in master.input.iter() {
         if match_input (tx, tx_dup) {
-          println (format! ("Duplicate input {:s}:{:u} detected. Cowardly refusing to merge.",
+          println (format! ("err: Duplicate input {:s}:{:u} detected. Cowardly refusing to merge.",
             util::u8_to_hex_string (tx.prev_hash), tx.prev_index));
           return None;
         }
