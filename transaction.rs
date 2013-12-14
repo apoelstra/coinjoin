@@ -1,4 +1,5 @@
 
+use std::hashmap::HashMap;
 use std::to_str::ToStr;
 
 use decoder;
@@ -98,7 +99,12 @@ impl Clone for Transaction {
  */
 pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
 {
-  let mut rv: Transaction = Transaction { nVersion: 0, nLockTime: 0, input: ~[], output: ~[] };
+  let mut rv: Transaction = Transaction {
+    nVersion: 0,
+    nLockTime: 0,
+    input: ~[],
+    output: ~[]
+  };
 
   /* Auxiallary state */
   let mut width = 0;
@@ -248,10 +254,10 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
   }
 }
 
+impl Transaction {
 /**
  * Private serialize function
  */
-impl Transaction {
   fn serialize (&self) -> ~[u8]
   {
     let mut rv:~[u8] = ~[];
@@ -277,6 +283,19 @@ impl Transaction {
     /* push locktime */
     rv = hash::push_u32_le (rv, self.nLockTime);
     rv
+  }
+
+  /** Getter for mpo */
+  pub fn most_popular_output (&self) -> u64 {
+    let mut values: HashMap<u64,uint> = HashMap::new ();
+    /* For each output increment its count */
+    for output in self.output.iter() {
+      values.mangle (output.nValue, (), |_,_| 1, |_,v,_| { *v += 1; });
+    }
+    match values.iter().max_by(|&(_,&count)| count) {
+      Some((&x,_)) => x,
+      None => 0  /* this shouldn't be able to happen .. */
+    }
   }
 }
 
