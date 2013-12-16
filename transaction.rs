@@ -115,8 +115,7 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
   let mut iter = hex_string.iter();
   let mut state = ReadVersion;  /* Initial state: read version */
   /* Is there a nicer way to compare C-like enums? */
-  while (state as int) != (Done as int) &&
-        (state as int) != (Error as int) {
+  loop {
     state = match state {
       /* Read big-endian u32 version */
       ReadVersion => {
@@ -242,16 +241,12 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
         }
       }
       /* Finished */
-      Error => { break }
+      Error => { return None; }
       Done => { break }
     }
   }
 
-  if (state as int) == (Done as int) {
-    Some (rv)
-  } else {
-    None
-  }
+  Some (rv)
 }
 
 impl Transaction {

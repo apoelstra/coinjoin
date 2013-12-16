@@ -22,7 +22,7 @@ fn main()
   while next_ln.len() > 0 {
     match transaction::from_hex (next_ln) {
       Some(t) => { transactions.push (t); }
-      None => {}
+      None => { println ("err: Failed to decode transaction."); }
     }
     next_ln = util::read_hex();
   }
