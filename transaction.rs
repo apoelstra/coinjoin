@@ -287,15 +287,32 @@ impl Transaction {
 
   /** Getter for mpo */
   pub fn most_popular_output (&self) -> u64 {
+    fn fold_function ((max_elem, max_count): (u64, uint), (&elem, &count): (&u64, &uint)) -> (u64, uint) {
+      if count > max_count {
+        (elem, count)
+      } else if count < max_count {
+        (max_elem, max_count)
+      } else if elem == 0 && max_elem == 0 {
+        (0, count)  /* this shouldn't ever happen */
+      } else {
+        let mut max_scan  = max_elem;
+        let mut elem_scan = elem;
+        /* tiebreak goes to rounder number */
+        while (max_scan % 10) == 0 &&
+              (elem_scan % 10) == 0 {
+          max_scan /= 10;
+          elem_scan /= 10;
+        }
+        if max_scan % 10 == 0 { (max_elem, max_count) } else { (elem, count) }
+      }
+    };
+
     let mut values: HashMap<u64,uint> = HashMap::new ();
     /* For each output increment its count */
     for output in self.output.iter() {
       values.mangle (output.nValue, (), |_,_| 1, |_,v,_| { *v += 1; });
     }
-    match values.iter().max_by(|&(_,&count)| count) {
-      Some((&x,_)) => x,
-      None => 0  /* this shouldn't be able to happen .. */
-    }
+    values.iter().fold ((0, 0), fold_function).first()
   }
 }
 
