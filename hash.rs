@@ -1,7 +1,6 @@
 
 use std::libc::size_t;
 use std::vec::from_buf;
-use std::vec::raw::to_ptr;
 
 
 #[link(name = "sha-wrapper")]
@@ -19,7 +18,7 @@ extern {
 pub fn sha256_sum (input: &[u8]) -> ~[u8]
 {
   unsafe {
-    let raw_ptr = csha256_sum (to_ptr(input), input.len() as size_t);
+    let raw_ptr = csha256_sum (input.as_ptr(), input.len() as size_t);
     let ret_val = from_buf (raw_ptr, 32);
     csha256_destroy (raw_ptr);
     ret_val
