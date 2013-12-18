@@ -114,7 +114,6 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
   /* RUN STATE MACHINE */
   let mut iter = hex_string.iter();
   let mut state = ReadVersion;  /* Initial state: read version */
-  /* Is there a nicer way to compare C-like enums? */
   loop {
     state = match state {
       /* Read big-endian u32 version */
