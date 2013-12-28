@@ -308,6 +308,18 @@ impl Transaction {
     }
     values.iter().fold ((0, 0), fold_function).first()
   }
+
+  /** Getter for mpo count */
+  pub fn most_popular_output_count (&self) -> uint {
+    let mut mpo_count = 0;
+    let mpo = self.most_popular_output ();
+    for output in self.output.iter() {
+      if output.nValue == mpo {
+        mpo_count += 1;
+      }
+    }
+    mpo_count
+  }
 }
 
 impl hash::Hashable for Transaction {
