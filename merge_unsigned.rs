@@ -81,7 +81,14 @@ pub fn merge_unsigned_transactions (txlist: &[Transaction]) -> Option<Transactio
         }
       }
       let mut new_tx = tx.clone();
-      new_tx.scriptSig = ~[];     /* Delete any existing signatures */
+      /* Remove any existing signature, except in the case that the sighash type
+       * is NONE|ANYONECANPAY, since this is the only signature type that will
+       * remain valid after a merger. (Actually, this is not true -- CodeShark
+       * has a multisigner which stores some sort of information in here, which
+       * is destroyed when I clear it. So TODO support this somehow.) */
+      if new_tx.nHashType != 0x82 {
+        new_tx.scriptSig = ~[];
+      }
       master.input.push (new_tx);
     }
   }

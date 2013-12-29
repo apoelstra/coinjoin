@@ -10,7 +10,8 @@ pub struct TxIn {
   prev_hash: ~[u8],
   prev_index: u32,
   scriptSig: ~[u8],
-  nSequence: u32
+  nSequence: u32,
+  nHashType: u8
 }
 
 pub struct TxOut {
@@ -50,7 +51,7 @@ enum ParserState {
  */
 fn new_blank_txin() -> TxIn
 {
-  TxIn { prev_hash: ~[], prev_index: 0, scriptSig: ~[], nSequence: 0 }
+  TxIn { prev_hash: ~[], prev_index: 0, scriptSig: ~[], nSequence: 0, nHashType: 0 }
 }
 
 fn new_blank_txout() -> TxOut
@@ -75,7 +76,8 @@ impl Clone for TxIn {
       prev_hash: self.prev_hash.clone(),
       prev_index: self.prev_index,
       scriptSig: self.scriptSig.clone(),
-      nSequence: self.nSequence
+      nSequence: self.nSequence,
+      nHashType: self.nHashType
     }
   }
 }
@@ -161,6 +163,13 @@ pub fn from_hex (hex_string: &[u8]) -> Option<Transaction>
       ReadTxinScriptSig => {
         match decoder::decode_token (&mut iter, decoder::Bytestring(width)) {
           decoder::String(s) => {
+            /* A standard tx scriptSig is PUSH[n+1] followed by an n-byte signature
+             * then a 1-byte hash type. We hardcode this form since it is not clear
+             * semantically what anything except this exact form means to us --- so
+             * there's no point in doing any more intelligent processing. */
+            if s[0] > 0 && s[0] < 76 && s.len() > s[0] as uint {
+              rv.input[rv.input.len() - 1].nHashType = s[s[0]];
+            }
             rv.input[rv.input.len() - 1].scriptSig = s;
             ReadTxinSequence
           }
