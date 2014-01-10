@@ -2,19 +2,54 @@
 # Note - to use this script you need Jeff Garzik's python-bitcoinrpc
 # https://github.com/jgarzik/python-bitcoinrpc
 
+import os
 import sys;
 import json;
 from bitcoinrpc.authproxy import AuthServiceProxy;
 
 # SET THESE VALUES
 rpc_user = "bitcoinrpc";
-rpc_pass = "[ENTER YOUR PASSWORD HERE]";
+rpc_pass = "A7Xr149i7F6GxkhDbxWDTbmXooz1UZGhhyUYvaajA13Z";
 rpc_host = "localhost";
 rpc_port = 8332;
 
 donation_minimum = 0;
 donation_per_input = 3000;
 donation_address = "1ForFeesAndDonationsSpendHerdtWbWy";
+
+
+# http://stackoverflow.com/questions/626796/how-do-i-find-the-windows-common-application-data-folder-using-python
+try:
+    from win32com.shell import shellcon, shell            
+    config_file = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, 0, 0) + "/Bitcoin/bitcoin.conf"
+except ImportError: # quick semi-nasty fallback for non-windows/win32com case
+    config_file = os.path.expanduser("~") + "/.bitcoin/bitcoin.conf"
+
+# thanks ryan-c for this function
+def asp_from_config(filename):
+    rpcport = '8332'
+    rpcconn = '127.0.0.1'
+    rpcuser = None
+    rpcpass = None
+    with open(filename, 'r') as f:
+        for line in f:
+            try:
+              (key, val) = line.rstrip().replace(' ', '').split('=')
+            except:
+              (key, val) = ("", "");
+            if key == 'rpcuser':
+                rpcuser = val
+            elif key == 'rpcpassword':
+                rpcpass = val
+            elif key == 'rpcport':
+                rpcport = val
+            elif key == 'rpcconnect':
+                rpcconn = val
+        f.close()
+    if rpcuser is not None and rpcpass is not None:
+        rpcurl = 'http://%s:%s@%s:%s' % (rpcuser, rpcpass, rpcconn, rpcport)
+        print('RPC server: %s' % rpcurl)
+        return AuthServiceProxy(rpcurl)
 
 
 def to_satoshi(s):
@@ -27,7 +62,8 @@ if len(sys.argv) < 3:
   print ("Usage: %s <input size> <target output size in BTC>" % sys.argv[0]);
   exit (0);
 
-service = AuthServiceProxy ("http://%s:%s@%s:%d" % (rpc_user, rpc_pass, rpc_host, rpc_port));
+#service = AuthServiceProxy ("http://%s:%s@%s:%d" % (rpc_user, rpc_pass, rpc_host, rpc_port));
+service = asp_from_config (config_file);
 
 balance = to_satoshi (service.getbalance());
 unspent = service.listunspent();
