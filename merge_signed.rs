@@ -1,5 +1,6 @@
 
 use transaction::{Transaction, TxIn, TxOut};
+use hash::Hashable;
 use util;
 
 /**/

@@ -3,6 +3,7 @@ use std::rand;
 use std::rand::Rng;
 
 use transaction::{Transaction, TxIn};
+use hash::Hashable;
 use util;
 
 /**/
